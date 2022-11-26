@@ -1,0 +1,53 @@
+﻿@model BinAttachmentModel;
+@{
+    Layout = null;
+}
+@using (Html.BeginForm("BinDetaching", "Home", FormMethod.Post))
+{
+    @Html.HiddenFor(model => model.Id);
+    <div class="modal-content" style="width:350px;height:100px;position:center">
+        <form asp-action="BinAdding" asp-controller="Home" method="post" id="targetForm">
+            <div class="modal-body">
+                <div class="form-group">
+                    <span id="warning"></span>
+                    <input class="form-control" type="text" asp-for="BinNumber" id="binNumber" />
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="center">
+                    <input type="submit" value="Submit" style="position:center" class="btn btn-primary" disabled />
+                    <input type="reset" value="Reset" class="btn btn-secondary" />
+                </div>
+            </div>
+        </form>
+    </div>
+
+}
+@section Scripts{
+    <script>
+        $(document).ready(function () {
+            // GetBin();
+            alert("")
+          //  document.getElementById("binNumber").addEventListener('keyup', function (e) {
+              //  GetBin();
+           // })
+        })
+        function GetBin() {
+            var value = document.getElementById("binNumber").value;
+            $.ajax({
+                type: 'Post',
+                url: '@Url.Action("", "Home")',
+                dataType: 'json',
+                data: { 'number': value },
+                success: function (data) {
+                    alert(data)
+                    //if (data == true) {
+                    //  $('#warning').text("The bin with the same nuber has already been registered!")
+                    //}
+
+                }
+            })
+        }
+    </script>
+}
