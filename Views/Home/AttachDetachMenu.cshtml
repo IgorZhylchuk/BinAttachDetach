@@ -11,7 +11,7 @@
     .ui-dialog-titlebar-close:after {
         content: 'X' !important;
         position: absolute;
-        top: -2px;
+        top: -4px;
         right: 3px;
     }
 </style>
@@ -40,7 +40,7 @@
                                 <h6 class="card-title" style="text-align:center">@machine.Name</h6>
                                 <input class="form-control" id="emptyInput" style="text-align:center" onclick="SetValues(@machine.Id, @process.Id)"/>
                                 <div class="modal-content" style="width:430px;height:180px;position:center" hidden id="addBin">
-                                    <form asp-action="BinAttachment" method="post">
+                                    <form asp-action="AttachDetachMenu" method="post">
 
                                         <div class="modal-body">
                                             <div class="form-group">
@@ -53,7 +53,6 @@
                                         <div class="form-group">
                                             <div class="col text-center">
                                                 <input type="submit" value="Submit"  class="btn btn-primary" disabled id="submitButton" />
-                                                <input type="reset" value="Reset" class="btn btn-secondary" />
                                             </div>
                                         </div>
                                     </form>
@@ -271,15 +270,16 @@
                         modal: true,
                         draggable: true,
                         title: "Enter bin number",
-                        position: { my: "center", at: "top", of: window },
+                        position: { my: "center", at: "center", of: window },
                         resizable: false,
                         height: 'auto',
                         width: 400,
-                        close: function () {
-                            $(this).closest('.ui-dialog-content').dialog('destroy').remove();
-                            setTimeout(function () {
-                                window.location.reload();
-                            }, 100);
+                close: function () {
+                    $(this).closest('.ui-dialog-content').dialog('close');
+                           // $(this).closest('.ui-dialog-content').dialog('destroy').remove();
+                          //  setTimeout(function () {
+                              //  window.location.reload();
+                            //}, 100);
                         }
             });
         }

@@ -23,6 +23,7 @@ namespace BinAttachment.Controllers
         private readonly ApplicationDBContext dBContext;
         private readonly SignInManager<UsersIdentity> _signInManager;
         private readonly UserManager<UsersIdentity> _userManager;
+   
 
 
 
@@ -33,7 +34,10 @@ namespace BinAttachment.Controllers
             _signInManager = signInManager;
  
         }
-
+        public IActionResult Test()
+        {
+            return View();
+        }
         public IActionResult Index()
         {
             return View();
@@ -116,7 +120,6 @@ namespace BinAttachment.Controllers
         [HttpPost]
         public async Task<IActionResult> AttachDetach(AttachedStringNamesModel model)
         {
-            // MainBinAttachment _binAttachment = new MainBinAttachment();
             BinAttachmentModel bin = new BinAttachmentModel();
             bin.Id = dBContext.Bins.Where(n => n.BinNumber == model.BinNumber).Select(i => i.Id).Single();
             bin.MachineName = dBContext.Machines.Where(i => i.Id == Int32.Parse(model.MachineName)).Select(n => n.Name).Single();
@@ -126,20 +129,9 @@ namespace BinAttachment.Controllers
             bin.BinNumber = model.BinNumber;
             bin.BinStatus = "Filling";
 
-            /*
-             BinAttachmentModel binAttachment = new BinAttachmentModel()
-             {
-                 ProcessName = _binAttachment.Processes.Where(i => i.Id == Int32.Parse(names.ProcessName)).Select(p => p.Name).ToString(),
-                 ProcessId = Int32.Parse(names.ProcessName),
-                 Machine = _binAttachment.Processes.Where(i => i.Id == Int32.Parse(names.ProcessName)).Select(m => m.Machines.Where(i => i.Id == Int32.Parse(names.MachinName))).Single().Select(m => m).FirstOrDefault(),
-                 MachineName = _binAttachment.Processes.Where(i => i.Id == Int32.Parse(names.ProcessName)).Select(m => m.Machines.Where(i => i.Id == Int32.Parse(names.MachinName))).Single().Select(m => m.Name).FirstOrDefault(),
-                 BinNumber = names.BinNumber,
-                        BinStatus = "Filling"
-
-                 };
-            */
             dBContext.Bins.Update(bin);
             await dBContext.SaveChangesAsync();
+           
             return RedirectToAction("Index", "Home");
 
         }
@@ -154,28 +146,7 @@ namespace BinAttachment.Controllers
         [HttpPost]
         public async Task<IActionResult> BinAttachment(AttachedStringNamesModel model)
         {
-           // MainBinAttachment _binAttachment = new MainBinAttachment();
-            BinAttachmentModel bin = new BinAttachmentModel();
-            bin.Id = dBContext.Bins.Where(n => n.BinNumber == model.BinNumber).Select(i => i.Id).Single();
-            bin.MachineName = dBContext.Machines.Where(i => i.Id == Int32.Parse(model.MachineName)).Select(n => n.Name).Single();
-            bin.Machine = dBContext.Machines.Where(m => m.ProcessModelId == Int32.Parse(model.ProcessName)).Where(m => m.Id == Int32.Parse(model.MachineName)).Select(m => m).Single();
-            bin.ProcessId = Int32.Parse(model.ProcessName);
-            bin.ProcessName = dBContext.Processes.Where(i => i.Id == Int32.Parse(model.ProcessName)).Select(n => n.Name).Single();
-            bin.BinNumber = model.BinNumber;
-            bin.BinStatus = "Filling";
-            
-           /*
-            BinAttachmentModel binAttachment = new BinAttachmentModel()
-            {
-                ProcessName = _binAttachment.Processes.Where(i => i.Id == Int32.Parse(names.ProcessName)).Select(p => p.Name).ToString(),
-                ProcessId = Int32.Parse(names.ProcessName),
-                Machine = _binAttachment.Processes.Where(i => i.Id == Int32.Parse(names.ProcessName)).Select(m => m.Machines.Where(i => i.Id == Int32.Parse(names.MachinName))).Single().Select(m => m).FirstOrDefault(),
-                MachineName = _binAttachment.Processes.Where(i => i.Id == Int32.Parse(names.ProcessName)).Select(m => m.Machines.Where(i => i.Id == Int32.Parse(names.MachinName))).Single().Select(m => m.Name).FirstOrDefault(),
-                BinNumber = names.BinNumber,
-                       BinStatus = "Filling"
-                      
-                };
-           */
+                BinAttachmentModel bin = DefaultUsers.Attach(dBContext, model);
                 dBContext.Bins.Update(bin);
                 await dBContext.SaveChangesAsync();
                 return RedirectToAction("Index", "Home");
@@ -188,12 +159,20 @@ namespace BinAttachment.Controllers
             var process = bin.Select(p => p.ProcessName).SingleOrDefault();
             var machine = bin.Select(m => m.MachineName).SingleOrDefault();
 
-          //  if(status == "Filling")
-          //  {
-                return Json(new { status, process, machine });
-          //  }
-           // return Json(status);
+            return Json(new { status, process, machine });
+ 
         }
+        public JsonResult BinStatusForDetaching(int id)
+        {
+            var bin = dBContext.Bins.Where(n => n.Id == id).Select(b => b);
+            var status = bin.Select(s => s.BinStatus).SingleOrDefault();
+            var process = bin.Select(p => p.ProcessName).SingleOrDefault();
+            var machine = bin.Select(m => m.MachineName).SingleOrDefault();
+
+            return Json(new { status, process, machine });
+
+        }
+
         public JsonResult Machines(int ProcessModelId)
         {
             MainBinAttachment binAttachment = new MainBinAttachment();
@@ -219,11 +198,18 @@ namespace BinAttachment.Controllers
             ViewBag.Bins = bins;
             return View();
         }
+        [HttpPost]
+        public async Task<IActionResult> AttachDetachMenu(AttachedStringNamesModel model)
+        {
+            BinAttachmentModel bin = DefaultUsers.Attach(dBContext, model);
+            dBContext.Bins.Update(bin);
+            await dBContext.SaveChangesAsync();
+            return RedirectToAction("AttachDetachMenu", "Home");
+        }
         public JsonResult GetBin(int id)
         {
             var binNumber = dBContext.Bins.Where(i => i.Machine.Id == id).Select( n => n.BinNumber).ToList();
 
-            //var binNumber = dBContext.Bins.Where(m => m.MachineName == "Process machine № 1").Select(n => n.BinNumber).FirstOrDefault();
             return Json(binNumber);
         }
         public JsonResult GetBins()
@@ -242,9 +228,11 @@ namespace BinAttachment.Controllers
             
             return Json(true);
         }
-        public IActionResult Details()
+        public IActionResult Details(int id)
         {
-            return View();
+            var bin = dBContext.Bins.Where(i => i.Id == id).Select(b => b).FirstOrDefault();
+            ViewBag.Number = bin;
+            return View(bin);
         }
 
         [HttpGet]
@@ -270,17 +258,20 @@ namespace BinAttachment.Controllers
         }
         public async Task<IActionResult> Detach(string binNumber)
         {
-            var bin = dBContext.Bins.Where(n => n.BinNumber == binNumber).Select(b => b).FirstOrDefault();
-            bin.BinNumber = bin.BinNumber;
-            bin.BinStatus = "Free to use";
-            
-            bin.Machine = null;
-            bin.MachineName = null;
-            bin.ProcessId = 0;
-            bin.ProcessName = null;
+            BinAttachmentModel bin = DefaultUsers.Detach(dBContext, binNumber);
+  
             dBContext.Bins.Update(bin);
             await dBContext.SaveChangesAsync();
+            
             return Json(new { success = true, message = "Detached successfully" });
+        }
+        [HttpPost]
+        public async Task<IActionResult> BinDetaching(string binNumber)
+        {
+            BinAttachmentModel bin = DefaultUsers.Detach(dBContext, binNumber);
+            dBContext.Bins.Update(bin);
+            await dBContext.SaveChangesAsync();
+            return RedirectToAction("Index", "Home");
         }
         public async Task<IActionResult> Delete(int id)
         {
@@ -333,15 +324,6 @@ namespace BinAttachment.Controllers
             }
         }
 
-        public IActionResult BinDetaching()
-        {
-            return View();
-        }
-
-       // [HttpPost]
-       // public async Task<IActionResult> BinDetaching(BinAttachmentModel bin) { 
-         //   dBContext.Bi
-       // }
         public IActionResult Privacy()
         {
             return View();

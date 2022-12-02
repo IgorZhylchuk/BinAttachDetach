@@ -104,3 +104,4 @@ C:\Users\Igor\source\repos\BinAttachment\BinAttachment\obj\Debug\netcoreapp3.1\R
 C:\Users\Igor\source\repos\BinAttachment\BinAttachment\obj\Debug\netcoreapp3.1\Razor\Views\Home\AttachDetachMenu.cshtml.g.cs
 C:\Users\Igor\source\repos\BinAttachment\BinAttachment\obj\Debug\netcoreapp3.1\Razor\Views\Home\AttachDetachMenu - Копировать.cshtml.g.cs
 C:\Users\Igor\source\repos\BinAttachment\BinAttachment\obj\Debug\netcoreapp3.1\Razor\Views\Home\Details.cshtml.g.cs
+C:\Users\Igor\source\repos\BinAttachment\BinAttachment\obj\Debug\netcoreapp3.1\Razor\Views\Home\Test.cshtml.g.cs

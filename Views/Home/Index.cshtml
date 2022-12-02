@@ -2,14 +2,12 @@
 @model BinAttachmentModel;
 @{
     ViewData["Title"] = "Bin Attachment";
-
-
 }
 <style>
     .ui-dialog-titlebar-close:after {
         content: 'X' !important;
         position: absolute;
-        top: -2px;
+        top: -4px;
         right: 3px;
     }
 </style>
@@ -29,13 +27,13 @@
 <body id="workingPage">
 
     <div class="form-group">
-        <a style="margin-bottom:10px;top: 50px;" class="btn btn-success" onclick="AddCheckBin()">Bin adding</a>
-    </div>
-    <div class="form-group">
-        <a style="margin-bottom:10px;top: 50px;" class="btn btn-secondary" onclick="BinAdding('@Url.Action("GenerateBarCode", "Home")')">Generate bar code</a>
-    </div>
-    <div class="form-group">
-        <a style="margin-bottom:10px;top: 50px;" class="btn btn-secondary" onclick="AttachDetach('@Url.Action("AttachDetach", "Home")')">Attach/Detach</a>
+        <a style="margin-bottom:10px;top: 50px; color:white" class="btn btn-success" onclick="AddCheckBin()">Bin adding</a>
+ 
+        <a style="margin-bottom: 10px; top: 50px; color: white" class="btn btn-primary" onclick="AttachDetach('@Url.Action("GenerateBarCode", "Home")', 'Generate bar code')">Generate bar code</a>
+
+        <a style="margin-bottom: 10px; top: 50px; color: white" class="btn btn-primary" onclick="AttachDetach('@Url.Action("AttachDetach", "Home")', 'Attaching/Detaching')">Attach/Detach</a>
+        
+        <a style="margin-bottom: 10px; top: 50px; color: white" class="btn btn-warning" asp-action="AttachDetachMenu">Working area</a>
     </div>
     <div class="modal-content" style="width:430px;height:180px;position:center" hidden id="addBin">
         <form asp-action="BinAdding" asp-controller="Home" method="post" id="targetForm">
@@ -80,6 +78,9 @@
 </body>
 @section Scripts{
     <script src="https://code.jquery.com/jquery-3.5.1.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"
+            integrity="sha256-lSjKY0/srUM9BE3dPm+c4fBo1dky2v27Gdjm2uoZaL0="
+            crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.min.js" integrity="sha384-IDwe1+LCz02ROU9k972gdyvl+AESN10+x7tBKgc9I5HFtuNz0wWnPclzo6p9vxnk" crossorigin="anonymous"></script>
 
     <script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
@@ -87,7 +88,6 @@
     <script src="https://cdn.datatables.net/1.12.1/js/dataTables.bootstrap5.min.js"></script>
 
     <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
 
     <script>
         var regExp = /[0-9][0-9]-[0-9][0-9]-[0-9][0-9]-[0-9][0-9][0-9]/;
@@ -135,7 +135,7 @@
 
                         {
                             data: "id", "render": function (data) {
-                                return "<div style='width:100%; position: center'><div class='btn-group' role='group' id='groupButton'><a id='code' class='btn btn-warning btn-small' onclick='GenerateCode("+data+")' style='height:5%'>Bar code</a ><a id='info' class='btn btn-success btn-small'  style = 'height: 5 %; margin-left: 5px; margin-right: 5px;' onclick=BinAdding('@Url.Action("Details", "Home")') >Details</a ><a class='btn btn-danger btn-small' style='height: 5 %' onclick=Delete(" + data + ") id='Delete' >Remove bin</a></div ></div >"
+                                return "<div style='width:100%; position: center'><div class='btn-group' role='group' id='groupButton'><a id='code' class='btn btn-warning btn-small' onclick='GenerateCode("+data+")' style='height:5%'>Bar code</a ><a id='info' class='btn btn-success btn-small'  style = 'height: 5 %; margin-left: 5px; margin-right: 5px;' onclick=BinAdding('@Url.Action("Details", "Home")/"+data+"') >Details</a ><a class='btn btn-danger btn-small' style='height: 5 %' onclick=Delete(" + data + ") id='Delete' >Remove bin</a></div ></div >"
                             },
                             orderable: false,
                             searchable: false,
@@ -220,26 +220,38 @@
                 })
         }
         function GenerateCode(id) {
-            var binId = document.getElementById('binsId');
-            var status = document.getElementById('binsStatus');
-            var number = document.getElementById('binsNumber');
                 $.ajax({
                     type: 'Get',
                     dataType: 'json',
                     url: '/Home/GenerateCodeById/'+ id,
                     success: function(data) {
-
-                        var result = JSON.stringify(data);
-
-                        binId.value = 1;
-                        status.value = "Empty";
-                        number.value = data;
-                        $("#formGenerator").submit();
+                        var redirectWindow = window.open(
+                            '/Home/GenerateBarCodeMain?code=' + data, '_blank');
+                        redirectWindow.location;
                     }
                 })
 
         }
-        function AttachDetach(url) {
+        function GenerateCodeMain(id) {
+            var binId = document.getElementById('binsId');
+            var status = document.getElementById('binsStatus');
+            var number = document.getElementById('binsNumber');
+            $.ajax({
+                type: 'Get',
+                dataType: 'json',
+                url: '/Home/GenerateCodeById/' + id,
+                success: function (data) {
+                    binId.value = 1;
+                    status.value = "Empty";
+                    number.value = data;
+                    $("#formGenerator").submit();
+                }
+            })
+
+        }
+
+
+        function AttachDetach(url, title) {
             var formDiv = $('<div/>');
             $.get(url)
                 .done(function (response) {
@@ -248,16 +260,17 @@
                         autoOpen: true,
                         modal: true,
                         draggable: true,
-                        title: "Attaching/Detaching",
+                        title: title,
                         position: { my: "center", at: "top", of: window },
                         resizable: false,
                         height: 'auto',
                         width: 450,
                         close: function () {
+                            $(this).closest('.ui-dialog-content').dialog('close');
                            //$('.ui-dialog-content').dialog('destroy').remove();
-                            setTimeout(function () {
-                                window.location.reload();
-                            }, 100);
+                           // setTimeout(function () {
+                            //    window.location.reload();
+                            //}, 100);
                         }
                     });
                 });
@@ -271,16 +284,16 @@
                         autoOpen: true,
                         modal: true,
                         draggable: true,
-                        title: "Enter bin number",
-                        position: { my: "center", at: "top", of: window },
+                        title: "Bin's info",
+                        position: { my: "center", at: "center", of: window },
                         resizable: false,
                         height: 'auto',
                         width: 400,
                         close: function () {
-                            $(this).closest('.ui-dialog-content').dialog('destroy').remove();
-                            setTimeout(function () {
-                                window.location.reload();
-                            }, 100);
+                            $(this).closest('.ui-dialog-content').dialog('close');
+                         //   setTimeout(function () {
+                            //    window.location.reload();
+                           //}, 100);
                         }
                     });
                 });
@@ -289,17 +302,18 @@
             $('#addBin').removeAttr('hidden').dialog({
                 autoOpen: true,
                 modal: true,
-                draggable: false,
+                draggable: true,
                 title: "Enter bin number",
                 position: { my: "center", at: "top", of: window },
                 resizable: false,
                 height: 'auto',
                 width: 500,
                 close: function () {
-                    $(this).closest('.ui-dialog-content').dialog('destroy').remove();
-                    setTimeout(function () {
-                        window.location.reload();
-                    }, 100);
+                    $(this).closest('.ui-dialog-content').dialog('close');
+                  //  $(this).closest('.ui-dialog-content').dialog('destroy').remove();
+                  ///  setTimeout(function () {
+                     //   window.location.reload();
+                   // }, 100);
                 }
             });
         }
