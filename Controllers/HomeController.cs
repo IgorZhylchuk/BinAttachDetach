@@ -1,6 +1,7 @@
 ﻿using BarcodeLib;
 using BinAttachment.Models;
 using BinAttachmentApp.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -24,9 +25,6 @@ namespace BinAttachment.Controllers
         private readonly SignInManager<UsersIdentity> _signInManager;
         private readonly UserManager<UsersIdentity> _userManager;
    
-
-
-
         public HomeController(ApplicationDBContext context, SignInManager<UsersIdentity> signInManager, UserManager<UsersIdentity> userManager)
         {
             _userManager = userManager;
@@ -34,12 +32,12 @@ namespace BinAttachment.Controllers
             _signInManager = signInManager;
  
         }
-        public IActionResult Test()
-        {
-            return View();
-        }
+
+        [Authorize]
         public IActionResult Index()
         {
+            MainBinAttachment binAttachment = new MainBinAttachment();
+            ViewBag.Processes = new SelectList(binAttachment.Processes, "Id", "Name");
             return View();
         }
 
@@ -52,6 +50,7 @@ namespace BinAttachment.Controllers
             ViewBag.User = user;
             return View();
         }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(LoginViewModel model)
@@ -66,14 +65,7 @@ namespace BinAttachment.Controllers
                         var result = await _signInManager.PasswordSignInAsync(user.UserName, model.Password, model.RememberMe, false);
                         if (result.Succeeded)
                         {
-                            if (_userManager.GetRolesAsync(user).Result.FirstOrDefault() == "Doctor")
-                            {
-                                return RedirectToAction("DayWorkingList", "Doctors");
-                            }
-                            else
-                            {
-                                return RedirectToAction("TimeSlot", "Home");
-                            }
+                            return RedirectToAction("Index", "Home");
                         }
                     }
 
@@ -91,12 +83,15 @@ namespace BinAttachment.Controllers
             return View();
         }
 
+        [Authorize]
         public IActionResult AttachDetach()
         {
             MainBinAttachment binAttachment = new MainBinAttachment();
             ViewBag.Processes = new SelectList(binAttachment.Processes, "Id", "Name");
             return View();
         }
+
+        [Authorize]
         public JsonResult CheckAttaching(string process, string machine)
         {
             string bin = "";
@@ -116,7 +111,8 @@ namespace BinAttachment.Controllers
             }
             return Json(new { binNumber = bin });
         }
-
+        
+        [Authorize]
         [HttpPost]
         public async Task<IActionResult> AttachDetach(AttachedStringNamesModel model)
         {
@@ -136,13 +132,15 @@ namespace BinAttachment.Controllers
 
         }
 
-
+        [Authorize]
         public IActionResult BinAttachment()
         {
             MainBinAttachment binAttachment = new MainBinAttachment();
             ViewBag.Processes = new SelectList(binAttachment.Processes, "Id", "Name");
             return View();
         }
+
+        [Authorize]
         [HttpPost]
         public async Task<IActionResult> BinAttachment(AttachedStringNamesModel model)
         {
@@ -152,6 +150,8 @@ namespace BinAttachment.Controllers
                 return RedirectToAction("Index", "Home");
 
         }
+
+        [Authorize]
         public JsonResult BinStatus(string binNumber)
         {
             var bin = dBContext.Bins.Where(n => n.BinNumber == binNumber).Select(b => b);
@@ -162,29 +162,29 @@ namespace BinAttachment.Controllers
             return Json(new { status, process, machine });
  
         }
+
+        [Authorize]
         public JsonResult BinStatusForDetaching(int id)
         {
             var bin = dBContext.Bins.Where(n => n.Id == id).Select(b => b);
             var status = bin.Select(s => s.BinStatus).SingleOrDefault();
             var process = bin.Select(p => p.ProcessName).SingleOrDefault();
             var machine = bin.Select(m => m.MachineName).SingleOrDefault();
+            var binNumber = bin.Select(b => b.BinNumber).SingleOrDefault();
 
-            return Json(new { status, process, machine });
+            return Json(new { status, process, machine, binNumber });
 
         }
 
+        [Authorize]
         public JsonResult Machines(int ProcessModelId)
         {
             MainBinAttachment binAttachment = new MainBinAttachment();
             var result = binAttachment.Machines.Where(p => p.ProcessModelId == ProcessModelId);
             return Json(new SelectList(result, "Id", "Name"));
         }
-        [HttpPost]
 
-        public IActionResult MainPage()
-        {
-            return View();
-        }
+        
         public IActionResult AttachDetachMenu()
         {
             IEnumerable<MachineModel> machines = dBContext.Machines.Select(m => m).ToArray();
@@ -198,6 +198,8 @@ namespace BinAttachment.Controllers
             ViewBag.Bins = bins;
             return View();
         }
+
+        
         [HttpPost]
         public async Task<IActionResult> AttachDetachMenu(AttachedStringNamesModel model)
         {
@@ -206,18 +208,24 @@ namespace BinAttachment.Controllers
             await dBContext.SaveChangesAsync();
             return RedirectToAction("AttachDetachMenu", "Home");
         }
+
+        [Authorize]
         public JsonResult GetBin(int id)
         {
             var binNumber = dBContext.Bins.Where(i => i.Machine.Id == id).Select( n => n.BinNumber).ToList();
 
             return Json(binNumber);
         }
+
+        [Authorize]
         public JsonResult GetBins()
         {
             
             IEnumerable<BinAttachmentModel> list = dBContext.Bins.Select(b => b).ToList();
            return Json(list);
         }
+
+        [Authorize]
         public JsonResult BinsChecking(string number)
         {
             var containing = dBContext.Bins.Select(n => n.BinNumber).Contains(number);
@@ -228,18 +236,15 @@ namespace BinAttachment.Controllers
             
             return Json(true);
         }
-        public IActionResult Details(int id)
-        {
-            var bin = dBContext.Bins.Where(i => i.Id == id).Select(b => b).FirstOrDefault();
-            ViewBag.Number = bin;
-            return View(bin);
-        }
 
+        [Authorize]
         [HttpGet]
         public IActionResult BinAdding()
         {
             return View();
         }
+
+        [Authorize]
         [HttpPost]
         public async Task<IActionResult> BinAdding(BinAttachmentModel bin)
         {
@@ -256,6 +261,8 @@ namespace BinAttachment.Controllers
             return View();
             
         }
+
+        [Authorize]
         public async Task<IActionResult> Detach(string binNumber)
         {
             BinAttachmentModel bin = DefaultUsers.Detach(dBContext, binNumber);
@@ -265,6 +272,8 @@ namespace BinAttachment.Controllers
             
             return Json(new { success = true, message = "Detached successfully" });
         }
+
+        [Authorize]
         [HttpPost]
         public async Task<IActionResult> BinDetaching(string binNumber)
         {
@@ -273,6 +282,8 @@ namespace BinAttachment.Controllers
             await dBContext.SaveChangesAsync();
             return RedirectToAction("Index", "Home");
         }
+        
+        [Authorize]
         public async Task<IActionResult> Delete(int id)
         {
             var result = dBContext.Bins.Where(b => b.Id == id).FirstOrDefault();
@@ -281,17 +292,20 @@ namespace BinAttachment.Controllers
             return Json(new { success = true, message = "Removed successfully" });
         }
 
+        [Authorize]
         public IActionResult GenerateBarCode()
         {
             return View();
         }
 
+        [Authorize]
         public JsonResult GenerateCodeById(int id)
         {
             var bin = dBContext.Bins.Where(i => i.Id == id).Select(b => b.BinNumber);
             return Json(bin);
         }
 
+        [Authorize]
         [HttpPost]
         public IActionResult GenerateBarCode(BinAttachmentModel bin)
         {
@@ -301,6 +315,8 @@ namespace BinAttachment.Controllers
             }
             return View();
         }
+
+        [Authorize]
         public IActionResult GenerateBarCodeMain(string code)
         {
             Barcode barcode = new Barcode();
@@ -324,15 +340,17 @@ namespace BinAttachment.Controllers
             }
         }
 
-        public IActionResult Privacy()
-        {
-            return View();
-        }
-
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        }
+
+        [Authorize]
+        public async Task<IActionResult> Logout()
+        {
+            await _signInManager.SignOutAsync();
+            return RedirectToAction("Login", "Home");
         }
     }
 }
